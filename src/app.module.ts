@@ -1,4 +1,4 @@
-// app.module.ts
+// src/app.module.ts
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ProducerModule } from './producer/producer.module';

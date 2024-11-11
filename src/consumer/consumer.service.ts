@@ -1,7 +1,8 @@
+// src/consumer/consumer.service.ts
+
 import { Injectable } from '@nestjs/common';
 import { OrderDto } from '../dtos/order.dto';
 
-// src/consumer/consumer.service.ts
 @Injectable()
 export class ConsumerService {
   private orders: OrderDto[] = [];

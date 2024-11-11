@@ -1,3 +1,4 @@
+// src/producer/producer.service.ts
 import { Inject, Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { OrderDto } from '../dtos/order.dto';
@@ -6,7 +7,7 @@ import { timeout } from 'rxjs';
 @Injectable()
 export class ProducerService {
   constructor(
-    @Inject('ORDERS_SERVICE') private readonly clientProxy: ClientProxy,
+    @Inject('ORDERS_PRODUCER') private readonly clientProxy: ClientProxy,
   ) {}
 
   placeOrder(order: OrderDto) {

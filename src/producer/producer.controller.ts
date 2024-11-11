@@ -1,4 +1,4 @@
-// src/orders/orders.controller.ts
+// src/producer/producer.controller.ts
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import { OrderDto } from '../dtos/order.dto';
 import { ProducerService } from './producer.service';

@@ -1,3 +1,5 @@
+// src/producer/producer.module.ts
+
 import { Module } from '@nestjs/common';
 import { ClientsModule } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
@@ -9,7 +11,7 @@ import { ProducerController } from './producer.controller';
   imports: [
     ClientsModule.registerAsync([
       {
-        name: 'ORDERS_SERVICE',
+        name: 'ORDERS_PRODUCER',
         useFactory: (configService: ConfigService) =>
           getProducerClientOptions(configService),
         inject: [ConfigService],

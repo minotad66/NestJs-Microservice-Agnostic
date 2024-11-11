@@ -2,6 +2,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MessagingRabbitmqSetupService } from './messaging-rabbitmq-setup.service';
+import { MessagingKafkaSetupService } from './messaging-kafka-setup.service'; // En caso de implementar
 
 @Module({
   imports: [ConfigModule],
@@ -14,8 +15,7 @@ import { MessagingRabbitmqSetupService } from './messaging-rabbitmq-setup.servic
         if (transportType === 'rmq') {
           return new MessagingRabbitmqSetupService(configService);
         } else if (transportType === 'kafka') {
-          throw new Error(`Unsupported transport type: ${transportType}`);
-          // return new MessagingKafkaSetupService(configService);
+          return new MessagingKafkaSetupService(configService);
         } else {
           throw new Error(`Unsupported transport type: ${transportType}`);
         }

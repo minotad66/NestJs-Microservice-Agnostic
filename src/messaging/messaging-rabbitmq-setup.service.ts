@@ -1,70 +1,40 @@
+// src/messaging/messaging-rabbitmq-setup.service.ts
+
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-  ClientProxy,
-  ClientProxyFactory,
-  Transport,
-} from '@nestjs/microservices';
 import * as amqp from 'amqplib';
 
 @Injectable()
 export class MessagingRabbitmqSetupService implements OnModuleInit {
-  private connection: amqp.Connection; // Conexión de amqplib
-  private channel: amqp.Channel; // Canal de RabbitMQ para crear colas/exchanges
+  private connection: amqp.Connection;
+  private channel: amqp.Channel;
 
   constructor(private readonly configService: ConfigService) {}
 
   async onModuleInit() {
-    await this.setupRabbitMQ(); // Configuración de las colas/exchanges
+    await this.setupRabbitMQ();
   }
 
-  public async setupRabbitMQ() {
-    // Obtener la configuración de RabbitMQ de variables de entorno
+  private async setupRabbitMQ() {
     const rabbitmqUrl = this.configService.get<string>('RABBITMQ_URL');
-    const mainQueue = this.configService.get<string>('QUEUE_NAME'); // Cola principal
-    const retryQueue = `${mainQueue}_retry`; // Cola de reintento
-    const deadLetterExchange = 'dead_letter_exchange'; // Exchange de dead letters (DLX)
+    const mainQueue = this.configService.get<string>('QUEUE_NAME');
+    const deadLetterExchange = 'dead_letter_exchange';
 
-    // Conexión y canal de RabbitMQ
     this.connection = await amqp.connect(rabbitmqUrl);
     this.channel = await this.connection.createChannel();
 
-    // Configurar colas y exchanges
-    await this.configureQueues(mainQueue, retryQueue, deadLetterExchange);
-
-    console.log('RabbitMQ setup complete with Retry Queue, DLX, and DLQ.');
-
-    // Cerrar el canal y la conexión después de la configuración
-    await this.channel.close();
-    await this.connection.close();
-  }
-
-  private async configureQueues(
-    mainQueue: string,
-    retryQueue: string,
-    deadLetterExchange: string,
-  ) {
     // Configurar el exchange de dead letters
     await this.channel.assertExchange(deadLetterExchange, 'direct', {
       durable: true,
     });
 
-    // Configuración de la cola principal con DLX que redirige a retry_queue en caso de fallo
+    // Configuración de la cola principal
     await this.channel.assertQueue(mainQueue, {
       durable: true,
       arguments: {
-        'x-dead-letter-exchange': 'dead_letter_exchange', // Apunta al DLX
-        'x-dead-letter-routing-key': 'orders_queue_retry', // Enviar a la cola de reintento
-      },
-    });
-
-    // Configuración de la cola de reintento (retry_queue) para enviar al RetryController
-    await this.channel.assertQueue(retryQueue, {
-      durable: true,
-      arguments: {
-        'x-message-ttl': 5000, // Tiempo de vida antes de redirigir
-        'x-dead-letter-exchange': 'dead_letter_exchange', // Envía a DLX después de reintentos
-        'x-dead-letter-routing-key': 'dead_letter_queue', // Routing key para dead-letter
+        'x-message-ttl': 10000,
+        'x-dead-letter-exchange': deadLetterExchange,
+        'x-dead-letter-routing-key': 'dead_letter_queue',
       },
     });
 
@@ -76,8 +46,10 @@ export class MessagingRabbitmqSetupService implements OnModuleInit {
       'dead_letter_queue',
     );
 
-    console.log(
-      'RabbitMQ setup complete with Dead Letter Exchange and Retry Queue.',
-    );
+    console.log('RabbitMQ setup complete with Dead Letter Exchange and DLQ.');
+
+    // Cerrar el canal y la conexión después de la configuración
+    await this.channel.close();
+    await this.connection.close();
   }
 }
