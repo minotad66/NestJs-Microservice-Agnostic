@@ -1,7 +1,11 @@
 // src/messaging/messaging-connection.config.ts
 
 import { ConfigService } from '@nestjs/config';
-import { Transport, ClientProviderOptions, MicroserviceOptions } from '@nestjs/microservices';
+import {
+  Transport,
+  ClientProviderOptions,
+  MicroserviceOptions,
+} from '@nestjs/microservices';
 
 export const getConsumerClientOptions = (
   configService: ConfigService,

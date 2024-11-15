@@ -5,5 +5,6 @@ export class OrderDto {
     public email: string,
     public productName: string,
     public quantity: number,
+    public responseApi: any,
   ) {}
 }

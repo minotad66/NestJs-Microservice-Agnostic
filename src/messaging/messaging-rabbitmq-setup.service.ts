@@ -1,6 +1,6 @@
 // src/messaging/messaging-rabbitmq-setup.service.ts
 
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as amqp from 'amqplib';
 
@@ -8,6 +8,7 @@ import * as amqp from 'amqplib';
 export class MessagingRabbitmqSetupService implements OnModuleInit {
   private connection: amqp.Connection;
   private channel: amqp.Channel;
+  private readonly logger = new Logger(MessagingRabbitmqSetupService.name);
 
   constructor(private readonly configService: ConfigService) {}
 
@@ -46,7 +47,9 @@ export class MessagingRabbitmqSetupService implements OnModuleInit {
       'dead_letter_queue',
     );
 
-    console.log('RabbitMQ setup complete with Dead Letter Exchange and DLQ.');
+    this.logger.log(
+      'RabbitMQ setup complete with Dead Letter Exchange and DLQ.',
+    );
 
     // Cerrar el canal y la conexión después de la configuración
     await this.channel.close();

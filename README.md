@@ -58,6 +58,19 @@ $ npm run test:e2e
 $ npm run test:cov
 ```
 
+## Running docker services
+
+```bash
+# Start services
+$ npm run docker:up
+
+# Stop services
+$ npm run docker:down
+
+# Restart services
+$ npm run docker:restart
+```
+
 # Proyecto de Productor y Consumidor de Mensajes
 
 Este es un proyecto unificado que incluye un sistema de productor y consumidor de mensajes, con soporte para varios transportes de mensajes como RabbitMQ y Kafka. Está construido en NestJS y puede expandirse fácilmente para incluir otros sistemas de transporte de mensajes.
@@ -84,6 +97,76 @@ src
     ├── consumer.controller.ts          # Controlador principal del consumidor
     └── dead-letter
         └── dead-letter.controller.ts   # Controlador para manejar mensajes muertos (DLQ)
+```
+## Estructura del Docker
+```
+version: '3.8'  # Specify the Docker Compose version
+
+services:
+  # RabbitMQ service with management plugin
+  rabbitmq:
+    image: <rabbitmq-image>  # Include the management plugin
+    container_name: <rabbitmq-container-name>
+    hostname: <rabbitmq-hostname>
+    ports:
+      - "${RABBITMQ_PORT}:<amqp-port>"  # AMQP standard port
+      - "${RABBITMQ_PORT_ADMIN}:<admin-port>"  # Management interface port
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    networks:
+      - app-network
+
+  # Zookeeper service (required for Kafka)
+  zookeeper:
+    image: <zookeeper-image>
+    container_name: <zookeeper-container-name>
+    hostname: <zookeeper-hostname>
+    environment:
+      ZOOKEEPER_CLIENT_PORT: <client-port>
+      ZOOKEEPER_TICK_TIME: <tick-time>
+      ZOOKEEPER_SYNC_LIMIT: <sync-limit>
+    ports:
+      - "<client-port>:<client-port>"
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper
+    networks:
+      - app-network
+
+  # Kafka Broker service
+  kafka:
+    image: <kafka-image>
+    container_name: <kafka-container-name>
+    hostname: <kafka-hostname>
+    depends_on:
+      - zookeeper
+    ports:
+      - "<broker-port>:<broker-port>"
+    environment:
+      KAFKA_BROKER_ID: <broker-id>
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:<zookeeper-port>
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://<advertised-listener>
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: <replication-factor>
+      KAFKA_CONSUMER_GROUP: ${KAFKA_CONSUMER_GROUP}
+      KAFKA_CONSUMER_GROUP_DLQ: ${KAFKA_CONSUMER_GROUP_DLQ}
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - app-network
+
+volumes:
+  rabbitmq_data:
+    driver: local
+  zookeeper_data:
+    driver: local
+  kafka_data:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
 ```
 
 ## Descripción de Archivos y Módulos
@@ -130,6 +213,10 @@ Para configurar el transporte de mensajes y otros parámetros, debes definir las
 - **TRANSPORT_TYPE**: Tipo de transporte (por ejemplo, `rmq` para RabbitMQ o `kafka`).
 - **RABBITMQ_URL**: URL de conexión para RabbitMQ (si usas `rmq`).
 - **QUEUE_NAME**: Nombre de la cola en RabbitMQ.
+- **RABBITMQ_PORT**: Puerto utilizado para las conexiones AMQP de RabbitMQ.
+- **RABBITMQ_PORT_ADMIN**: Puerto utilizado para la consola de administración de RabbitMQ.
+- **RABBITMQ_DEFAULT_USER**: Nombre de usuario predeterminado para RabbitMQ.
+- **RABBITMQ_DEFAULT_PASS**: Contraseña predeterminada para RabbitMQ.
 - **KAFKA_BROKER_URL**: URL del broker de Kafka (si usas `kafka`).
 - **KAFKA_CONSUMER_GROUP**: Nombre del grupo de consumidores en Kafka.
 

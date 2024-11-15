@@ -1,5 +1,5 @@
 // src/consumer/consumer.controller.ts
-import { Controller, Inject } from '@nestjs/common';
+import { Controller, Inject, Logger } from '@nestjs/common';
 import { ConsumerService } from './consumer.service';
 import {
   Ctx,
@@ -21,6 +21,7 @@ export class ConsumerController {
     channel: any;
   }[] = []; // Cola en memoria para mensajes pendientes
   private processingRetry = false; // Bandera para evitar concurrencia
+  private readonly logger = new Logger(ConsumerController.name);
 
   constructor(
     private readonly consumerService: ConsumerService,
@@ -41,7 +42,10 @@ export class ConsumerController {
       channel.ack(originalMessage);
       delete this.retryCounts[messageId];
     } catch (error) {
-      console.error(`Error processing order ${order.email}:`, error.message);
+      this.logger.error(
+        `Error processing order ${order.email}:`,
+        error.message,
+      );
 
       // Incrementar el contador y manejar reintentos en `processRetries`
       this.retryCounts[messageId] = (this.retryCounts[messageId] || 0) + 1;
@@ -63,7 +67,7 @@ export class ConsumerController {
       channel.ack(originalMessage);
       return orders;
     } catch (error) {
-      console.error(`Error fetching orders: ${error.message}`);
+      this.logger.error(`Error fetching orders: ${error.message}`);
       channel.nack(originalMessage, false, true); // Requeue para reintentos
       throw error;
     }
@@ -79,11 +83,11 @@ export class ConsumerController {
 
       try {
         await this.consumerService.handleOrderPlaced(order);
-        console.log(`Retry successful for order ${order.email}`);
+        this.logger.log(`Retry successful for order ${order.email}`);
         this.pendingRetries.shift();
         delete this.retryCounts[messageId];
       } catch (error) {
-        console.error(
+        this.logger.error(
           `Retry failed for order ${order.email}: ${error.message}`,
         );
 
@@ -91,7 +95,7 @@ export class ConsumerController {
         const retryCount = this.retryCounts[messageId];
 
         if (retryCount >= 3) {
-          console.warn(
+          this.logger.warn(
             `Max retries reached for order ${order.email}. Sending to DLQ.`,
           );
           await lastValueFrom(this.dlqClient.emit('dead_letter_queue', order));
